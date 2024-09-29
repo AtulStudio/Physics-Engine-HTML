@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Physics Engine</title>
+    <style>
+        /* Reset default margin and make the body full-screen */
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            background-color: #222; /* Dark background for modern look */
+        }
+
+        /* Info text styling */
+        #info {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            color: white;
+            text-align: center;
+            z-index: 1;
+            font-size: 18px;
+            letter-spacing: 1px;
+        }
+
+        /* Make canvas occupy full screen */
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Information text -->
+    <div id="info">3D Physics Simulation - Bouncing Balls</div>
+
+    <!-- Include Three.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // Scene, Camera, Renderer setup
+        let scene = new THREE.Scene();
+        let camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        let renderer = new THREE.WebGLRenderer({ antialias: true });
+        
+        // Configure the renderer and add to the document
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Add ambient and directional light to illuminate the objects
+        let ambientLight = new THREE.AmbientLight(0x404040); // Soft light
+        scene.add(ambientLight);
+
+        let directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 10, 7.5);
+        scene.add(directionalLight);
+
+        // Create ground plane (acting as the floor)
+        let groundGeometry = new THREE.PlaneGeometry(500, 500);
+        let groundMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
+        let ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2; // Rotate to lay flat
+        ground.position.y = -10; // Lower the ground below the balls
+        scene.add(ground);
+
+        // Physics-related variables
+        let gravity = new THREE.Vector3(0, -0.05, 0); // Constant downward force
+        let objects = []; // Array to store all physical objects (balls)
+
+        // Function to create a ball with random position and velocity
+        function createBall() {
+            // Create a sphere geometry and material
+            let geometry = new THREE.SphereGeometry(1, 32, 32);
+            let material = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff });
+            let ball = new THREE.Mesh(geometry, material);
+
+            // Add physics properties (random initial velocity)
+            ball.velocity = new THREE.Vector3(
+                (Math.random() - 0.5) * 0.2, // Random x velocity
+                (Math.random() - 0.5) * 0.5, // Random y velocity
+                (Math.random() - 0.5) * 0.2  // Random z velocity
+            );
+
+            // Set random starting position for the ball
+            ball.position.set(Math.random() * 10 - 5, 5, Math.random() * 10 - 5);
+
+            // Add the ball to the scene and objects array
+            objects.push(ball);
+            scene.add(ball);
+        }
+
+        // Function to handle collisions with the ground (basic bounce effect)
+        function checkCollisions(ball) {
+            // If the ball is below the ground level, reverse its velocity and reduce it (bounce)
+            if (ball.position.y - 1 <= ground.position.y) {
+                ball.velocity.y *= -0.8; // Reverse and dampen the vertical velocity (bounce effect)
+                ball.position.y = ground.position.y + 1; // Ensure ball stays above ground
+            }
+        }
+
+        // Update the physics for each object (apply gravity and velocity)
+        function updatePhysics() {
+            objects.forEach(obj => {
+                // Apply gravity to the velocity
+                obj.velocity.add(gravity);
+
+                // Update the position based on the velocity
+                obj.position.add(obj.velocity);
+
+                // Check for collisions with the ground
+                checkCollisions(obj);
+            });
+        }
+
+        // Main animation loop (renders the scene and updates the physics)
+        function animate() {
+            requestAnimationFrame(animate); // Continuously loop
+            updatePhysics(); // Update physics each frame
+            renderer.render(scene, camera); // Render the scene
+        }
+
+        // Initial camera setup
+        camera.position.set(0, 5, 15); // Set the camera back so we can see the whole scene
+        camera.lookAt(0, 0, 0); // Point the camera at the center of the scene
+
+        // Create multiple balls in the scene
+        for (let i = 0; i < 10; i++) {
+            createBall();
+        }
+
+        // Start the animation loop
+        animate();
+
+        // Handle window resizing to keep the canvas full-screen
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+    </script>
+</body>
+</html>
